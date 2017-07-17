@@ -1166,6 +1166,8 @@ dtb-$(CONFIG_ARCH_TEGRA_3x_SOC) += \
 	tegra30-cardhu-a04.dtb \
 	tegra30-colibri-eval-v3.dtb \
 	tegra30-grouper-bach.dtb
+	tegra30-asus-tf300t.dtb \
+	tegra30-colibri-eval-v3.dtb
 dtb-$(CONFIG_ARCH_TEGRA_114_SOC) += \
 	tegra114-dalmore.dtb \
 	tegra114-roth.dtb \
