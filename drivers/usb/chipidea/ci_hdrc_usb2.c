@@ -32,9 +32,15 @@ static const struct ci_hdrc_platform_data ci_zynq_pdata = {
 	.capoffset	= DEF_CAPOFFSET,
 };
 
+static const struct ci_hdrc_platform_data ci_zevio_pdata = {
+	.capoffset	= DEF_CAPOFFSET,
+	.flags		= CI_HDRC_REGS_SHARED | CI_HDRC_FORCE_FULLSPEED,
+};
+
 static const struct of_device_id ci_hdrc_usb2_of_match[] = {
 	{ .compatible = "chipidea,usb2" },
 	{ .compatible = "xlnx,zynq-usb-2.20a", .data = &ci_zynq_pdata },
+	{ .compatible = "lsi,zevio-usb", .data = &ci_zevio_pdata },
 	{ }
 };
 MODULE_DEVICE_TABLE(of, ci_hdrc_usb2_of_match);
@@ -65,7 +71,12 @@ static int ci_hdrc_usb2_probe(struct platform_device *pdev)
 		return -ENOMEM;
 
 	priv->clk = devm_clk_get(dev, NULL);
-	if (!IS_ERR(priv->clk)) {
+	if (IS_ERR(priv->clk)) {
+		ret = PTR_ERR(priv->clk);
+		if (ret != -ENOENT)
+			return ret;
+		priv->clk = NULL;
+	} else if (!IS_ERR(priv->clk)) {
 		ret = clk_prepare_enable(priv->clk);
 		if (ret) {
 			dev_err(dev, "failed to enable the clock: %d\n", ret);
@@ -105,7 +116,8 @@ static int ci_hdrc_usb2_remove(struct platform_device *pdev)
 
 	pm_runtime_disable(&pdev->dev);
 	ci_hdrc_remove_device(priv->ci_pdev);
-	clk_disable_unprepare(priv->clk);
+	if (priv->clk)
+		clk_disable_unprepare(priv->clk);
 
 	return 0;
 }
@@ -120,6 +132,6 @@ static struct platform_driver ci_hdrc_usb2_driver = {
 };
 module_platform_driver(ci_hdrc_usb2_driver);
 
-MODULE_DESCRIPTION("ChipIdea HDRC USB2 binding for ci13xxx");
+MODULE_DESCRIPTION("ChipIdea HDRC generic USB2 binding");
 MODULE_AUTHOR("Antoine Tenart <antoine.tenart@free-electrons.com>");
 MODULE_LICENSE("GPL");
