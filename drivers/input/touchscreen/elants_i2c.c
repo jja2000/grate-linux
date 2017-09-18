@@ -367,6 +367,7 @@ static int elants_i2c_query_hw_version(struct elants_data *ts)
 	int retry_cnt = MAX_RETRIES;
 	const u8 cmd[] = { CMD_HEADER_READ, E_ELAN_INFO_FW_ID, 0x00, 0x01 };
 	u8 resp[HEADER_SIZE];
+<<<<<<< HEAD
 	int error;
 
 	while (retry_cnt--) {
@@ -375,6 +376,16 @@ static int elants_i2c_query_hw_version(struct elants_data *ts)
 						   "read fw id");
 		if (error)
 			return error;
+=======
+	int err;
+
+	while (retry_cnt--) {
+		err = elants_i2c_execute_command(client, cmd, sizeof(cmd),
+						 resp, sizeof(resp), 1,
+						 "read fw id");
+		if (err < 0)
+			return err;
+>>>>>>> a1579b1483b0... input: elants: refactor elants_i2c_execute_command()
 
 		ts->hw_version = elants_i2c_parse_version(resp);
 		if (ts->hw_version != 0xffff)
@@ -392,6 +403,7 @@ static int elants_i2c_query_fw_version(struct elants_data *ts)
 	int retry_cnt = MAX_RETRIES;
 	const u8 cmd[] = { CMD_HEADER_READ, E_ELAN_INFO_FW_VER, 0x00, 0x01 };
 	u8 resp[HEADER_SIZE];
+<<<<<<< HEAD
 	int error;
 
 	while (retry_cnt--) {
@@ -405,6 +417,21 @@ static int elants_i2c_query_fw_version(struct elants_data *ts)
 		if (ts->fw_version != 0x0000 && ts->fw_version != 0xffff)
 			return 0;
 
+=======
+	int err;
+
+	while (retry_cnt--) {
+		err = elants_i2c_execute_command(client, cmd, sizeof(cmd),
+						 resp, sizeof(resp), 1,
+						 "read fw version");
+		if (err < 0)
+			return err;
+
+		ts->fw_version = elants_i2c_parse_version(resp);
+		if (ts->fw_version != 0x0000 && ts->fw_version != 0xffff)
+			return 0;
+
+>>>>>>> a1579b1483b0... input: elants: refactor elants_i2c_execute_command()
 		dev_dbg(&client->dev, "(read fw version) resp %*phC\n",
 			(int)sizeof(resp), resp);
 	}
@@ -425,9 +452,18 @@ static int elants_i2c_query_test_version(struct elants_data *ts)
 	error = elants_i2c_execute_command(client, cmd, sizeof(cmd),
 					   resp, sizeof(resp), MAX_RETRIES,
 					   "read test version");
+<<<<<<< HEAD
 	if (error) {
 		dev_err(&client->dev, "Failed to read test version\n");
 		return error;
+=======
+	if (!error) {
+		version = elants_i2c_parse_version(resp);
+		ts->test_version = version >> 8;
+		ts->solution_version = version & 0xff;
+
+		return 0;
+>>>>>>> a1579b1483b0... input: elants: refactor elants_i2c_execute_command()
 	}
 
 	version = elants_i2c_parse_version(resp);
@@ -734,7 +770,11 @@ static int elants_i2c_validate_remark_id(struct elants_data *ts,
 	error = elants_i2c_execute_command(client, cmd, sizeof(cmd),
 					   resp, sizeof(resp),
 					   1, "read Remark ID");
+<<<<<<< HEAD
 	if (error)
+=======
+	if (error < 0)
+>>>>>>> a1579b1483b0... input: elants: refactor elants_i2c_execute_command()
 		return error;
 
 	ts_remark_id = get_unaligned_be16(&resp[3]);
