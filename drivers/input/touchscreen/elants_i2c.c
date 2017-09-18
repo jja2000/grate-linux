@@ -498,9 +498,11 @@ static int elants_i2c_query_ts_info(struct elants_data *ts)
 			 rows, cols, osr);
 	} else {
 		/* translate trace number to TS resolution */
-		ts->prop.max_x = ELAN_TS_RESOLUTION(rows, osr);
+		if (!ts->prop.max_x)
+			ts->prop.max_x = ELAN_TS_RESOLUTION(rows, osr);
 		ts->x_res = DIV_ROUND_CLOSEST(ts->prop.max_x, phy_x);
-		ts->prop.max_y = ELAN_TS_RESOLUTION(cols, osr);
+		if (!ts->prop.max_y)
+			ts->prop.max_y = ELAN_TS_RESOLUTION(cols, osr);
 		ts->y_res = DIV_ROUND_CLOSEST(ts->prop.max_y, phy_y);
 	}
 
@@ -1231,12 +1233,6 @@ static int elants_i2c_probe(struct i2c_client *client,
 		return -ENXIO;
 	}
 
-	error = elants_i2c_initialize(ts);
-	if (error) {
-		dev_err(&client->dev, "failed to initialize: %d\n", error);
-		return error;
-	}
-
 	ts->input = devm_input_allocate_device(&client->dev);
 	if (!ts->input) {
 		dev_err(&client->dev, "Failed to allocate input device\n");
@@ -1247,6 +1243,12 @@ static int elants_i2c_probe(struct i2c_client *client,
 	ts->input->id.bustype = BUS_I2C;
 
 	touchscreen_parse_properties(ts->input, true, &ts->prop);
+
+	error = elants_i2c_initialize(ts);
+	if (error) {
+		dev_err(&client->dev, "failed to initialize: %d\n", error);
+		return error;
+	}
 
 	__set_bit(BTN_TOUCH, ts->input->keybit);
 	__set_bit(EV_ABS, ts->input->evbit);
