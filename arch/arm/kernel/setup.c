@@ -1073,6 +1073,9 @@ void __init hyp_mode_check(void)
 #endif
 }
 
+extern void *bootfb_addr;
+extern int bootfb_skip_for_pageinit;
+
 void __init setup_arch(char **cmdline_p)
 {
 	const struct machine_desc *mdesc;
@@ -1110,6 +1113,8 @@ void __init setup_arch(char **cmdline_p)
 	early_fixmap_init();
 	early_ioremap_init();
 
+	bootfb_addr = NULL;
+
 	parse_early_param();
 
 #ifdef CONFIG_MMU
@@ -1127,9 +1132,14 @@ void __init setup_arch(char **cmdline_p)
 	/* Memory may have been removed so recalculate the bounds. */
 	adjust_lowmem_bounds();
 
+	pr_crit("before early_ioremap_reset()\n");
+	bootfb_skip_for_pageinit = 1;
+
 	early_ioremap_reset();
+	pr_crit("after early_ioremap_reset()\n");
 
 	paging_init(mdesc);
+	pr_crit("after paging_init()\n");
 	request_standard_resources(mdesc);
 
 	if (mdesc->restart)
