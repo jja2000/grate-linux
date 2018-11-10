@@ -279,7 +279,7 @@
 		interrupt-parent = <&intc>;
 	};
 
-	cache-controller@50043000 {
+	l2c: cache-controller@50043000 {
 		compatible = "arm,pl310-cache";
 		reg = <0x50043000 0x1000>;
 		arm,data-latency = <6 6 2>;
@@ -997,24 +997,28 @@
 			device_type = "cpu";
 			compatible = "arm,cortex-a9";
 			reg = <0>;
+			next-level-cache = <&l2c>;
 		};
 
 		cpu@1 {
 			device_type = "cpu";
 			compatible = "arm,cortex-a9";
 			reg = <1>;
+			next-level-cache = <&l2c>;
 		};
 
 		cpu@2 {
 			device_type = "cpu";
 			compatible = "arm,cortex-a9";
 			reg = <2>;
+			next-level-cache = <&l2c>;
 		};
 
 		cpu@3 {
 			device_type = "cpu";
 			compatible = "arm,cortex-a9";
 			reg = <3>;
+			next-level-cache = <&l2c>;
 		};
 	};
 
