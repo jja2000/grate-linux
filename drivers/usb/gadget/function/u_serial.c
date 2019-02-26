@@ -1080,6 +1080,52 @@ static void gs_console_exit(struct gs_port *port)
 	port->console = NULL;
 }
 
+ssize_t gserial_set_console(unsigned char port_num, const char *page, size_t count)
+{
+	struct gs_port *port;
+	bool enable;
+	int ret = -ENXIO;
+
+	mutex_lock(&ports[port_num].lock);
+	port = ports[port_num].port;
+
+	if (WARN_ON(port == NULL))
+		goto out;
+
+	ret = strtobool(page, &enable);
+	if (ret)
+		goto out;
+
+	if (enable)
+		ret = gs_console_init(port);
+	else
+		gs_console_exit(port);
+
+	mutex_unlock(&ports[port_num].lock);
+out:
+	return ret < 0 ? ret : count;
+}
+EXPORT_SYMBOL_GPL(gserial_set_console);
+
+ssize_t gserial_get_console(unsigned char port_num, char *page)
+{
+	struct gs_port *port;
+	ssize_t ret = -ENXIO;
+
+	mutex_lock(&ports[port_num].lock);
+	port = ports[port_num].port;
+
+	if (WARN_ON(port == NULL))
+		goto out;
+
+	ret = sprintf(page, "%u\n", !!port->console);
+
+	mutex_unlock(&ports[port_num].lock);
+out:
+	return ret;
+}
+EXPORT_SYMBOL_GPL(gserial_get_console);
+
 #else
 
 static int gs_console_connect(struct gs_port *port)
