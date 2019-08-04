@@ -1667,6 +1667,8 @@ disable_vdd:
 
 static const struct dev_pm_ops tegra_dsi_pm_ops = {
 	SET_RUNTIME_PM_OPS(tegra_dsi_suspend, tegra_dsi_resume, NULL)
+	SET_SYSTEM_SLEEP_PM_OPS(pm_runtime_force_suspend,
+				pm_runtime_force_resume)
 };
 
 static const struct of_device_id tegra_dsi_of_match[] = {

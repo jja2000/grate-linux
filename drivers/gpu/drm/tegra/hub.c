@@ -929,6 +929,8 @@ disable_disp:
 static const struct dev_pm_ops tegra_display_hub_pm_ops = {
 	SET_RUNTIME_PM_OPS(tegra_display_hub_suspend,
 			   tegra_display_hub_resume, NULL)
+	SET_SYSTEM_SLEEP_PM_OPS(pm_runtime_force_suspend,
+				pm_runtime_force_resume)
 };
 
 static const struct tegra_display_hub_soc tegra186_display_hub = {

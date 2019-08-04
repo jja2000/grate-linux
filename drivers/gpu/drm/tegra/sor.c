@@ -3972,6 +3972,10 @@ static int tegra_sor_suspend(struct device *dev)
 	struct tegra_sor *sor = dev_get_drvdata(dev);
 	int err;
 
+	err = pm_runtime_force_suspend(dev);
+	if (err)
+		return err;
+
 	if (sor->hdmi_supply) {
 		err = regulator_disable(sor->hdmi_supply);
 		if (err < 0)
@@ -3991,6 +3995,10 @@ static int tegra_sor_resume(struct device *dev)
 		if (err < 0)
 			return err;
 	}
+
+	err = pm_runtime_force_resume(dev);
+	if (err)
+		return err;
 
 	return 0;
 }
