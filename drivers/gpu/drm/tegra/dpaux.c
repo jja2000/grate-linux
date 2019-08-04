@@ -663,6 +663,8 @@ disable_clk:
 
 static const struct dev_pm_ops tegra_dpaux_pm_ops = {
 	SET_RUNTIME_PM_OPS(tegra_dpaux_suspend, tegra_dpaux_resume, NULL)
+	SET_SYSTEM_SLEEP_PM_OPS(pm_runtime_force_suspend,
+				pm_runtime_force_resume)
 };
 
 static const struct tegra_dpaux_soc tegra124_dpaux_soc = {

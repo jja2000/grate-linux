@@ -1744,6 +1744,8 @@ static int tegra_hdmi_resume(struct device *dev)
 
 static const struct dev_pm_ops tegra_hdmi_pm_ops = {
 	SET_RUNTIME_PM_OPS(tegra_hdmi_suspend, tegra_hdmi_resume, NULL)
+	SET_SYSTEM_SLEEP_PM_OPS(pm_runtime_force_suspend,
+				pm_runtime_force_resume)
 };
 
 struct platform_driver tegra_hdmi_driver = {
