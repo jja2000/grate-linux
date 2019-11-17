@@ -19,6 +19,7 @@
 #include <linux/types.h>
 
 #include <soc/tegra/fuse.h>
+#include <soc/tegra/mc.h>
 
 #define EMC_INTSTATUS				0x000
 #define EMC_INTMASK				0x004
@@ -546,6 +547,10 @@ static int tegra_emc_probe(struct platform_device *pdev)
 			err);
 		goto unset_cb;
 	}
+
+	err = tegra_icc_emc_setup_interconnect(&pdev->dev, 32 / 8);
+	if (err)
+		dev_err(&pdev->dev, "failed to initialize ICC: %d\n", err);
 
 	return 0;
 
