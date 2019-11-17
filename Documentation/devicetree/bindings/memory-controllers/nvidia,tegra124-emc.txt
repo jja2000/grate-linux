@@ -5,6 +5,7 @@ Required properties :
 - compatible : Should be "nvidia,tegra124-emc".
 - reg : physical base address and length of the controller's registers.
 - nvidia,memory-controller : phandle of the MC driver.
+- #interconnect-cells : Should be 1.
 
 The node should contain a "emc-timings" subnode for each supported RAM type
 (see field RAM_CODE in register PMC_STRAPPING_OPT_A), with its unit address
@@ -195,6 +196,8 @@ Example SoC include file:
 		reg = <0x0 0x7001b000 0x0 0x1000>;
 
 		nvidia,memory-controller = <&mc>;
+
+		#interconnect-cells = <1>;
 	};
 };
 
