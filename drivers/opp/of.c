@@ -687,12 +687,13 @@ static int _read_opp_key(struct dev_pm_opp *new_opp, struct opp_table *table,
  * Return:
  * Valid OPP pointer:
  *		On success
- * NULL:
+ * ERR_PTR(-EBUSY):
  *		Duplicate OPPs (both freq and volt are same) and opp->available
- *		OR if the OPP is not supported by hardware.
  * ERR_PTR(-EEXIST):
  *		Freq are same and volt are different OR
  *		Duplicate OPPs (both freq and volt are same) and !opp->available
+ * ERR_PTR(-ENODEV):
+ *		The OPP is not supported by hardware.
  * ERR_PTR(-ENOMEM):
  *		Memory allocation failure
  * ERR_PTR(-EINVAL):
@@ -720,6 +721,7 @@ static struct dev_pm_opp *_opp_add_static_v2(struct opp_table *opp_table,
 	/* Check if the OPP supports hardware's hierarchy of versions or not */
 	if (!_opp_is_supported(dev, opp_table, np)) {
 		dev_dbg(dev, "OPP not supported by hardware: %llu\n", rate);
+		ret = -ENODEV;
 		goto free_opp;
 	}
 
@@ -744,12 +746,8 @@ static struct dev_pm_opp *_opp_add_static_v2(struct opp_table *opp_table,
 		new_opp->pstate = pm_genpd_opp_to_performance_state(dev, new_opp);
 
 	ret = _opp_add(dev, new_opp, opp_table, rate_not_available);
-	if (ret) {
-		/* Don't return error for duplicate OPPs */
-		if (ret == -EBUSY)
-			ret = 0;
+	if (ret)
 		goto free_required_opps;
-	}
 
 	/* OPP to select on device suspend */
 	if (of_property_read_bool(np, "opp-suspend")) {
@@ -793,7 +791,7 @@ free_opp:
 static int _of_add_opp_table_v2(struct device *dev, struct opp_table *opp_table)
 {
 	struct device_node *np;
-	int ret, count = 0, pstate_count = 0;
+	int ret, count = 0, filtered = 0, pstate_count = 0;
 	struct dev_pm_opp *opp;
 
 	/* OPP table is already initialized for the device */
@@ -810,19 +808,31 @@ static int _of_add_opp_table_v2(struct device *dev, struct opp_table *opp_table)
 	/* We have opp-table node now, iterate over it and add OPPs */
 	for_each_available_child_of_node(opp_table->np, np) {
 		opp = _opp_add_static_v2(opp_table, dev, np);
-		if (IS_ERR(opp)) {
-			ret = PTR_ERR(opp);
+		ret = PTR_ERR_OR_ZERO(opp);
+		if (!ret) {
+			count++;
+		} else if (ret == -ENODEV) {
+			filtered++;
+		} else if (ret != -EBUSY) {
 			dev_err(dev, "%s: Failed to add OPP, %d\n", __func__,
 				ret);
 			of_node_put(np);
 			goto remove_static_opp;
-		} else if (opp) {
-			count++;
 		}
 	}
 
-	/* There should be one of more OPP defined */
-	if (WARN_ON(!count)) {
+	/* There should be one or more OPPs defined */
+	if (!count) {
+		if (!filtered)
+			/* all can't be duplicates, so there must be none */
+			dev_err(dev, "%s: OPP table empty", __func__);
+		else if (!opp_table->supported_hw)
+			dev_err(dev,
+				"%s: all OPPs match hw version, but platform did not provide it",
+				__func__);
+		else
+			dev_err(dev, "%s: no supported OPPs", __func__);
+
 		ret = -ENOENT;
 		goto remove_static_opp;
 	}
