@@ -807,24 +807,29 @@ static int tegra_devfreq_probe(struct platform_device *pdev)
 
 	tegra->reset = devm_reset_control_get(&pdev->dev, "actmon");
 	if (IS_ERR(tegra->reset)) {
-		dev_err(&pdev->dev, "Failed to get reset\n");
+		dev_err(&pdev->dev, "Failed to get reset control: %pe\n",
+			tegra->reset);
 		return PTR_ERR(tegra->reset);
 	}
 
 	tegra->clock = devm_clk_get(&pdev->dev, "actmon");
 	if (IS_ERR(tegra->clock)) {
-		dev_err(&pdev->dev, "Failed to get actmon clock\n");
+		dev_err(&pdev->dev, "Failed to get actmon clock: %pe\n",
+			tegra->clock);
 		return PTR_ERR(tegra->clock);
 	}
 
 	tegra->emc_clock = devm_clk_get(&pdev->dev, "emc");
 	if (IS_ERR(tegra->emc_clock)) {
-		dev_err(&pdev->dev, "Failed to get emc clock\n");
+		dev_err(&pdev->dev, "Failed to get emc clock: %pe\n",
+			tegra->emc_clock);
 		return PTR_ERR(tegra->emc_clock);
 	}
 
 	err = platform_get_irq(pdev, 0);
-	if (err < 0)
+
+	if (err < 0) {
+		dev_err(&pdev->dev, "Failed to get IRQ: %pe\n", ERR_PTR(err));
 		return err;
 
 	tegra->irq = err;
@@ -835,7 +840,8 @@ static int tegra_devfreq_probe(struct platform_device *pdev)
 					actmon_thread_isr, IRQF_ONESHOT,
 					"tegra-devfreq", tegra);
 	if (err) {
-		dev_err(&pdev->dev, "Interrupt request failed: %d\n", err);
+		dev_err(&pdev->dev, "Interrupt request failed: %pe\n",
+			ERR_PTR(err));
 		return err;
 	}
 
@@ -844,7 +850,8 @@ static int tegra_devfreq_probe(struct platform_device *pdev)
 	err = clk_prepare_enable(tegra->clock);
 	if (err) {
 		dev_err(&pdev->dev,
-			"Failed to prepare and enable ACTMON clock\n");
+			"Failed to prepare and enable ACTMON clock: %pe\n",
+			ERR_PTR(err));
 		return err;
 	}
 
@@ -852,7 +859,8 @@ static int tegra_devfreq_probe(struct platform_device *pdev)
 
 	rate = clk_round_rate_unboundly(tegra->emc_clock, ULONG_MAX);
 	if (rate < 0) {
-		dev_err(&pdev->dev, "Failed to round clock rate: %ld\n", rate);
+		dev_err(&pdev->dev, "Failed to get max emc clock rate: %pe\n",
+			ERR_PTR(rate));
 		return rate;
 	}
 
@@ -869,14 +877,17 @@ static int tegra_devfreq_probe(struct platform_device *pdev)
 
 		if (rate < 0) {
 			dev_err(&pdev->dev,
-				"Failed to round clock rate: %ld\n", rate);
+				"Failed to round emc clock rate: %pe\n",
+				ERR_PTR(rate));
 			err = rate;
 			goto remove_opps;
 		}
 
 		err = dev_pm_opp_add(&pdev->dev, rate / KHZ, 0);
 		if (err) {
-			dev_err(&pdev->dev, "Failed to add OPP: %d\n", err);
+			dev_err(&pdev->dev,
+				"Failed to add OPP @ %lu kHz: %pe\n",
+				rate / KHZ, ERR_PTR(err));
 			goto remove_opps;
 		}
 	}
@@ -891,7 +902,8 @@ static int tegra_devfreq_probe(struct platform_device *pdev)
 
 	err = devfreq_add_governor(&tegra_devfreq_governor);
 	if (err) {
-		dev_err(&pdev->dev, "Failed to add governor: %d\n", err);
+		dev_err(&pdev->dev, "Failed to add governor: %pe\n",
+			ERR_PTR(err));
 		goto remove_opps;
 	}
 
